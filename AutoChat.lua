@@ -1,51 +1,64 @@
+-- LocalScript, ví dụ đặt trong StarterPlayerScripts
+
 local player = game.Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 
--- Tạo GUI (giống script trước)
--- ...
+-- === 1. Thiết lập hiệu ứng shader đẹp ===
 
--- Hàm gửi tin nhắn với random delay và thay đổi nhẹ nội dung
-local function sendSafeMessage(baseMsg)
-    -- Thêm ký tự ngẫu nhiên nhỏ để tránh spam giống hệt
-    local suffix = tostring(math.random(100,999))
-    local msg = baseMsg .. " " .. suffix
-
-    local ChatEvent = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest")
-    ChatEvent:FireServer(msg, "All")
+-- Xoá các hiệu ứng post-processing cũ để tránh trùng lặp
+for _, effect in pairs(Lighting:GetChildren()) do
+    if effect:IsA("PostEffect") then
+        effect:Destroy()
+    end
 end
 
--- Hàm random thời gian delay giữa các tin nhắn (10-20 giây)
-local function getRandomInterval()
-    return math.random(10,20)
-end
+-- BloomEffect - tạo hiệu ứng phát sáng mềm mại
+local bloom = Instance.new("BloomEffect")
+bloom.Name = "CustomBloomEffect"
+bloom.Intensity = 1.8
+bloom.Threshold = 0.5
+bloom.Size = 24
+bloom.Parent = Lighting
 
--- Coroutine gửi tin nhắn an toàn
-local messageCoroutine
+-- ColorCorrectionEffect - chỉnh màu sắc tươi sáng, ấm áp
+local colorCorrection = Instance.new("ColorCorrectionEffect")
+colorCorrection.Name = "CustomColorCorrection"
+colorCorrection.TintColor = Color3.fromRGB(255, 240, 220)
+colorCorrection.Contrast = 0.1
+colorCorrection.Brightness = 0.05
+colorCorrection.Saturation = 0.2
+colorCorrection.Parent = Lighting
 
-toggleBtn.MouseButton1Click:Connect(function()
-    if not isRunning then
-        message = msgBox.Text
-        if message == nil or message == "" then
-            warn("Vui lòng nhập nội dung tin nhắn!")
-            return
-        end
+-- === 2. Tạo GUI hiển thị FPS ===
 
-        isRunning = true
-        toggleBtn.Text = "Dừng"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FPSDisplayGui"
+screenGui.Parent = playerGui
 
-        messageCoroutine = coroutine.create(function()
-            while isRunning do
-                sendSafeMessage(message)
-                wait(getRandomInterval())
-            end
-        end)
-        coroutine.resume(messageCoroutine)
-    else
-        isRunning = false
-        toggleBtn.Text = "Bắt đầu"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(0, 100, 0, 30)
+fpsLabel.Position = UDim2.new(1, -110, 0, 10) -- góc trên bên phải màn hình
+fpsLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+fpsLabel.BackgroundTransparency = 0.5
+fpsLabel.TextColor3 = Color3.new(1, 1, 1)
+fpsLabel.Font = Enum.Font.GothamBold
+fpsLabel.TextSize = 18
+fpsLabel.Text = "FPS: ..."
+fpsLabel.Parent = screenGui
+
+-- === 3. Cập nhật FPS realtime ===
+
+local lastTime = tick()
+local frameCount = 0
+
+RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local currentTime = tick()
+    if currentTime - lastTime >= 1 then
+        fpsLabel.Text = "FPS: " .. frameCount
+        frameCount = 0
+        lastTime = currentTime
     end
 end)
-
--- Bạn có thể thêm logic theo dõi cảnh báo hoặc giới hạn chat nếu Roblox cung cấp API (hiện Roblox không công khai)
