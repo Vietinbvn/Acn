@@ -1,64 +1,52 @@
--- LocalScript, ví dụ đặt trong StarterPlayerScripts
-
-local player = game.Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 local Lighting = game:GetService("Lighting")
-local RunService = game:GetService("RunService")
 
--- === 1. Thiết lập hiệu ứng shader đẹp ===
-
--- Xoá các hiệu ứng post-processing cũ để tránh trùng lặp
+-- Xóa hết các hiệu ứng post-processing cũ để tránh trùng lặp
 for _, effect in pairs(Lighting:GetChildren()) do
     if effect:IsA("PostEffect") then
         effect:Destroy()
     end
 end
 
--- BloomEffect - tạo hiệu ứng phát sáng mềm mại
+-- BloomEffect: Hiệu ứng phát sáng mềm mại, lung linh
 local bloom = Instance.new("BloomEffect")
-bloom.Name = "CustomBloomEffect"
-bloom.Intensity = 1.8
-bloom.Threshold = 0.5
-bloom.Size = 24
+bloom.Intensity = 3
+bloom.Threshold = 0.4
+bloom.Size = 30
 bloom.Parent = Lighting
 
--- ColorCorrectionEffect - chỉnh màu sắc tươi sáng, ấm áp
+-- ColorCorrectionEffect: Chỉnh màu ấm áp, rực rỡ
 local colorCorrection = Instance.new("ColorCorrectionEffect")
-colorCorrection.Name = "CustomColorCorrection"
-colorCorrection.TintColor = Color3.fromRGB(255, 240, 220)
-colorCorrection.Contrast = 0.1
-colorCorrection.Brightness = 0.05
-colorCorrection.Saturation = 0.2
+colorCorrection.TintColor = Color3.fromRGB(255, 230, 200)
+colorCorrection.Contrast = 0.25
+colorCorrection.Brightness = 0.1
+colorCorrection.Saturation = 0.45
 colorCorrection.Parent = Lighting
 
--- === 2. Tạo GUI hiển thị FPS ===
+-- DepthOfFieldEffect: Làm mờ hậu cảnh, tạo chiều sâu
+local depthOfField = Instance.new("DepthOfFieldEffect")
+depthOfField.FocusDistance = 60
+depthOfField.InFocusRadius = 30
+depthOfField.NearIntensity = 0.8
+depthOfField.FarIntensity = 0.8
+depthOfField.Parent = Lighting
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "FPSDisplayGui"
-screenGui.Parent = playerGui
+-- SunRaysEffect: Tạo tia sáng mặt trời lung linh
+local sunRays = Instance.new("SunRaysEffect")
+sunRays.Intensity = 0.15
+sunRays.Spread = 0.2
+sunRays.Parent = Lighting
 
-local fpsLabel = Instance.new("TextLabel")
-fpsLabel.Size = UDim2.new(0, 100, 0, 30)
-fpsLabel.Position = UDim2.new(1, -110, 0, 10) -- góc trên bên phải màn hình
-fpsLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-fpsLabel.BackgroundTransparency = 0.5
-fpsLabel.TextColor3 = Color3.new(1, 1, 1)
-fpsLabel.Font = Enum.Font.GothamBold
-fpsLabel.TextSize = 18
-fpsLabel.Text = "FPS: ..."
-fpsLabel.Parent = screenGui
+-- BlurEffect: Xóa mờ toàn màn hình, tạo hiệu ứng mờ đẹp mắt
+local blur = Instance.new("BlurEffect")
+blur.Size = 6 -- Bạn có thể tăng giảm để điều chỉnh mức độ mờ
+blur.Parent = Lighting
 
--- === 3. Cập nhật FPS realtime ===
-
-local lastTime = tick()
-local frameCount = 0
-
-RunService.RenderStepped:Connect(function()
-    frameCount = frameCount + 1
-    local currentTime = tick()
-    if currentTime - lastTime >= 1 then
-        fpsLabel.Text = "FPS: " .. frameCount
-        frameCount = 0
-        lastTime = currentTime
-    end
-end)
+-- Atmosphere: Tạo không gian khí quyển, sương mù nhẹ nhàng
+local atmosphere = Instance.new("Atmosphere")
+atmosphere.Density = 0.05
+atmosphere.Offset = 0.1
+atmosphere.Color = Color3.fromRGB(255, 240, 220)
+atmosphere.Decay = 0.2
+atmosphere.Glare = 0.1
+atmosphere.Haze = 0.3
+atmosphere.Parent = Lighting
