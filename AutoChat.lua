@@ -1,127 +1,126 @@
--- Tải thành công
+--// ESP Player Script
 print("Tải hoàn thành")
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
--- GUI
-local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
-gui.Name = "ESP_GUI"
+-- Giao diện chính
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+ScreenGui.Name = "ESP_GUI"
 
-local mainFrame = Instance.new("Frame", gui)
-mainFrame.Size = UDim2.new(0, 250, 0, 300)
-mainFrame.Position = UDim2.new(0, 20, 0.5, -150)
-mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 250, 0, 180)
+mainFrame.Position = UDim2.new(0, 20, 0.5, -90)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BackgroundTransparency = 0.2
-mainFrame.BorderSizePixel = 0
-mainFrame.ClipsDescendants = true
-mainFrame.AnchorPoint = Vector2.new(0, 0.5)
-mainFrame.Name = "Menu"
-mainFrame.Visible = true
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.UICorner = Instance.new("UICorner", mainFrame)
-mainFrame.UICorner.CornerRadius = UDim.new(0, 12)
+mainFrame.Parent = ScreenGui
 
-local title = Instance.new("TextLabel", mainFrame)
-title.Text = "ESP Menu"
+-- Bo góc
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
+
+-- Tiêu đề
+local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
+title.Text = "ESP Player"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 20
+title.Parent = mainFrame
 
--- Danh sách người chơi
-local playerList = Instance.new("ScrollingFrame", mainFrame)
-playerList.Position = UDim2.new(0, 10, 0, 40)
-playerList.Size = UDim2.new(1, -20, 1, -50)
-playerList.BackgroundTransparency = 1
-playerList.ScrollBarThickness = 4
-playerList.CanvasSize = UDim2.new(0, 0, 0, 0)
+-- Nút teleport
+local teleportButton = Instance.new("TextButton")
+teleportButton.Size = UDim2.new(1, -20, 0, 30)
+teleportButton.Position = UDim2.new(0, 10, 0, 50)
+teleportButton.Text = "Teleport đến người chơi đầu tiên"
+teleportButton.TextColor3 = Color3.new(1, 1, 1)
+teleportButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+teleportButton.Font = Enum.Font.Gotham
+teleportButton.TextSize = 14
+teleportButton.Parent = mainFrame
 
--- Hàm vẽ ESP
-local function createESP(target)
-    if target:FindFirstChild("ESP_Aura") then return end
-    local char = target.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+local tpCorner = Instance.new("UICorner")
+tpCorner.CornerRadius = UDim.new(0, 8)
+tpCorner.Parent = teleportButton
 
-    -- Aura
-    local aura = Instance.new("SelectionSphere", char.HumanoidRootPart)
-    aura.Adornee = char.HumanoidRootPart
-    aura.Name = "ESP_Aura"
-    aura.Color3 = Color3.fromRGB(0, 255, 255)
-
-    -- Billboard GUI
-    local bb = Instance.new("BillboardGui", char)
-    bb.Name = "ESP_Info"
-    bb.Size = UDim2.new(0, 100, 0, 40)
-    bb.StudsOffset = Vector3.new(0, 3, 0)
-    bb.Adornee = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
-    bb.AlwaysOnTop = true
-
-    -- Tên
-    local name = Instance.new("TextLabel", bb)
-    name.Size = UDim2.new(1, 0, 0.5, 0)
-    name.BackgroundTransparency = 1
-    name.TextColor3 = Color3.new(1, 1, 1)
-    name.Text = target.Name
-    name.Font = Enum.Font.GothamBold
-    name.TextSize = 14
-
-    -- Máu
-    local health = Instance.new("TextLabel", bb)
-    health.Size = UDim2.new(1, 0, 0.5, 0)
-    health.Position = UDim2.new(0, 0, 0.5, 0)
-    health.BackgroundTransparency = 1
-    health.TextColor3 = Color3.new(1, 0, 0)
-    health.Font = Enum.Font.Gotham
-    health.TextSize = 14
-
-    -- Cập nhật máu
-    local function update()
-        if char:FindFirstChild("Humanoid") then
-            local hp = math.floor(char.Humanoid.Health)
-            local max = math.floor(char.Humanoid.MaxHealth)
-            health.Text = "HP: " .. hp .. "/" .. max
+-- Hàm Teleport
+teleportButton.MouseButton1Click:Connect(function()
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character:MoveTo(plr.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
+            break
         end
     end
+end)
 
-    RunService.RenderStepped:Connect(update)
+-- ESP Aura + Tên + Máu
+function createESP(target)
+    if target == LocalPlayer then return end
+    local character = target.Character
+    if not character then return end
+
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local head = character:FindFirstChild("Head")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if root and head and humanoid then
+        -- Vòng aura
+        local aura = Instance.new("SelectionSphere")
+        aura.Adornee = root
+        aura.Color3 = Color3.new(0, 1, 0)
+        aura.SurfaceTransparency = 0.5
+        aura.Parent = root
+
+        -- Billboard GUI
+        local espGui = Instance.new("BillboardGui")
+        espGui.Adornee = head
+        espGui.Size = UDim2.new(0, 200, 0, 50)
+        espGui.StudsOffset = Vector3.new(0, 2, 0)
+        espGui.AlwaysOnTop = true
+        espGui.Parent = head
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.TextColor3 = Color3.new(1, 1, 1)
+        nameLabel.Text = target.Name
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextScaled = true
+        nameLabel.Parent = espGui
+
+        local healthLabel = Instance.new("TextLabel")
+        healthLabel.Position = UDim2.new(0, 0, 0.5, 0)
+        healthLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        healthLabel.BackgroundTransparency = 1
+        healthLabel.TextColor3 = Color3.new(1, 0, 0)
+        healthLabel.Text = "Máu: " .. humanoid.Health
+        healthLabel.Font = Enum.Font.Gotham
+        healthLabel.TextScaled = true
+        healthLabel.Parent = espGui
+
+        -- Cập nhật máu liên tục
+        RunService.RenderStepped:Connect(function()
+            if humanoid and humanoid.Parent then
+                healthLabel.Text = "Máu: " .. math.floor(humanoid.Health)
+            end
+        end)
+    end
 end
 
--- Tạo nút + ESP cho mỗi player
-local function addPlayer(p)
-    if p == LocalPlayer then return end
+-- Gọi ESP cho người chơi đang có
+for _, plr in pairs(Players:GetPlayers()) do
+    if plr ~= LocalPlayer then
+        createESP(plr)
+    end
+end
 
-    local btn = Instance.new("TextButton", playerList)
-    btn.Size = UDim2.new(1, -10, 0, 30)
-    btn.Text = p.Name
-    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 14
-    btn.BorderSizePixel = 0
-    btn.UICorner = Instance.new("UICorner", btn)
-    btn.UICorner.CornerRadius = UDim.new(0, 8)
-
-    playerList.CanvasSize = UDim2.new(0, 0, 0, #playerList:GetChildren() * 32)
-
-    -- Click = teleport + ESP
-    btn.MouseButton1Click:Connect(function()
-        createESP(p)
-        local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-        if hrp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
-        end
+-- Tự thêm khi có người chơi mới
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function()
+        wait(1)
+        createESP(plr)
     end)
-end
-
--- Lặp qua các player hiện tại
-for _, p in pairs(Players:GetPlayers()) do
-    addPlayer(p)
-end
-
--- Khi có người mới vào
-Players.PlayerAdded:Connect(addPlayer)
+end)
