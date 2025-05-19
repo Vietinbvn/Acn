@@ -1,10 +1,10 @@
--- Optimize Script by PPL
+-- Optimize Script by PPL (FIXED)
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 
--- [1] TẮT CÁC THỨ GÂY LAG
+-- [1] TẮT CÁC THỨ GÂY LAG (ĐÃ FIX)
 local function optimizeEnvironment()
     -- Xóa hạt và hiệu ứng
     for _, obj in pairs(workspace:GetDescendants()) do
@@ -26,11 +26,12 @@ local function optimizeEnvironment()
     workspace.Terrain.Decoration = false
 end
 
--- [2] FPS COUNTER
+-- [2] FPS COUNTER (ĐÃ FIX DÒNG 21)
 local function createFPSCounter()
-    local fpsGui = Instance.new("ScreenGui", CoreGui)
+    local fpsGui = Instance.new("ScreenGui")
     fpsGui.Name = "FPS_Monitor"
     fpsGui.ResetOnSpawn = false
+    fpsGui.Parent = CoreGui
 
     local fpsText = Instance.new("TextLabel")
     fpsText.Size = UDim2.new(0, 100, 0, 30)
@@ -54,23 +55,28 @@ local function createFPSCounter()
         end
         
         -- Tính FPS trung bình
-        local fps = math.floor(#frameTimes / (now - frameTimes[1]))
-        fpsText.Text = "FPS: " .. fps
+        if #frameTimes > 1 then
+            local fps = math.floor(#frameTimes / (now - frameTimes[1]))
+            fpsText.Text = "FPS: " .. fps
+        end
     end
 
     RunService.Heartbeat:Connect(updateFPS)
 end
 
--- [3] CHỈNH FONT SANG SANS
+-- [3] CHỈNH FONT SANG SANS (ĐÃ FIX DÒNG 102)
 local function applySansFont()
-    -- Chỉnh font cho CoreGui
-    LocalPlayer:WaitForChild("PlayerGui"):GetPropertyChangedSignal("CurrentScreenOrientation"):Wait()
+    -- Đợi PlayerGui tồn tại
+    if not LocalPlayer:FindFirstChild("PlayerGui") then
+        LocalPlayer:WaitForChild("PlayerGui")
+    end
     
     local function updateFont(obj)
         if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
             pcall(function()
-                if obj.Font ~= Enum.Font.SourceSans then
-                    obj.Font = Enum.Font.SourceSans
+                obj.Font = Enum.Font.SourceSans
+                if obj:IsA("TextLabel") and string.find(obj.Name:lower(), "title") then
+                    obj.Font = Enum.Font.SourceSansBold
                 end
             end)
         end
@@ -84,15 +90,22 @@ local function applySansFont()
     LocalPlayer.PlayerGui.DescendantAdded:Connect(updateFont)
 end
 
--- [4] TẮT RENDER KHU VỰC KHÔNG THẤY
+-- [4] TẮT RENDER KHU VỰC KHÔNG THẤY (ĐÃ FIX)
 local function cullDistantObjects()
     local camera = workspace.CurrentCamera
+    local originalFieldOfView = camera.FieldOfView
+    
+    -- Giữ nguyên camera type
+    camera.CameraType = Enum.CameraType.Custom
     
     local function updateViewDistance()
-        -- Giới hạn view distance 500 studs
-        camera.CameraType = Enum.CameraType.Scriptable
-        camera.CFrame = CFrame.new(camera.CFrame.Position, camera.Focus.Position)
-        camera.DiagonalFieldOfView = 70
+        -- Chỉ render trong phạm vi 500 studs
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                local distance = (obj.Position - camera.CFrame.Position).Magnitude
+                obj.LocalTransparencyModifier = (distance > 500) and 1 or 0
+            end
+        end
     end
     
     RunService.RenderStepped:Connect(updateViewDistance)
@@ -104,6 +117,4 @@ createFPSCounter()
 applySansFont()
 cullDistantObjects()
 
--- [6] THÔNG BÁO HOÀN THÀNH
-LocalPlayer.PlayerGui:WaitForChild("FPS_Monitor", 5)
 print("Tối ưu hóa hoàn tất! FPS counter đã hiển thị")
