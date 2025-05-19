@@ -1,52 +1,70 @@
-local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
 
--- Xóa hết các hiệu ứng cũ tránh trùng lặp
-for _, effect in pairs(Lighting:GetChildren()) do
-    if effect:IsA("PostEffect") then
-        effect:Destroy()
+local teleportEvent = ReplicatedStorage:WaitForChild("RequestTeleportToPlayer")
+
+-- Tạo GUI đơn giản
+local playerGui = player:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TeleportMenu"
+screenGui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 300)
+frame.Position = UDim2.new(0, 20, 0, 50)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.Parent = screenGui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+title.Text = "Chọn người để Teleport"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.Parent = frame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Parent = frame
+listLayout.Padding = UDim.new(0, 5)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Hàm tạo nút cho từng người chơi
+local function createPlayerButton(targetPlayer)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -20, 0, 30)
+    button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    button.TextColor3 = Color3.new(1,1,1)
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 18
+    button.Text = targetPlayer.Name
+    button.Parent = frame
+
+    button.MouseButton1Click:Connect(function()
+        teleportEvent:FireServer(targetPlayer.Name)
+    end)
+end
+
+-- Tạo danh sách người chơi ban đầu
+for _, p in pairs(Players:GetPlayers()) do
+    if p ~= player then -- không hiện tên chính mình
+        createPlayerButton(p)
     end
 end
 
--- BloomEffect: Tăng cường ánh sáng phát sáng mềm mại
-local bloom = Instance.new("BloomEffect")
-bloom.Intensity = 3          -- Mạnh hơn bình thường
-bloom.Threshold = 0.4
-bloom.Size = 30
-bloom.Parent = Lighting
+-- Cập nhật danh sách khi có người vào hoặc ra
+Players.PlayerAdded:Connect(function(p)
+    if p ~= player then
+        createPlayerButton(p)
+    end
+end)
 
--- ColorCorrectionEffect: Chỉnh sửa màu sắc ấm áp, rực rỡ hơn
-local colorCorrection = Instance.new("ColorCorrectionEffect")
-colorCorrection.TintColor = Color3.fromRGB(255, 230, 200)
-colorCorrection.Contrast = 0.25
-colorCorrection.Brightness = 0.1
-colorCorrection.Saturation = 0.4
-colorCorrection.Parent = Lighting
-
--- DepthOfFieldEffect: Hiệu ứng làm mờ hậu cảnh, tạo chiều sâu
-local depthOfField = Instance.new("DepthOfFieldEffect")
-depthOfField.FocusDistance = 60
-depthOfField.InFocusRadius = 30
-depthOfField.NearIntensity = 0.8
-depthOfField.FarIntensity = 0.8
-depthOfField.Parent = Lighting
-
--- SunRaysEffect: Tạo tia sáng mặt trời lung linh
-local sunRays = Instance.new("SunRaysEffect")
-sunRays.Intensity = 0.15
-sunRays.Spread = 0.2
-sunRays.Parent = Lighting
-
--- BlurEffect: Tạo hiệu ứng mờ nhẹ, giúp hình ảnh mềm mại hơn
-local blur = Instance.new("BlurEffect")
-blur.Size = 2
-blur.Parent = Lighting
-
--- Atmosphere: Tạo không gian khí quyển, sương mù nhẹ nhàng
-local atmosphere = Instance.new("Atmosphere")
-atmosphere.Density = 0.05
-atmosphere.Offset = 0.1
-atmosphere.Color = Color3.fromRGB(255, 240, 220)
-atmosphere.Decay = 0.2
-atmosphere.Glare = 0.1
-atmosphere.Haze = 0.3
-atmosphere.Parent = Lighting
+Players.PlayerRemoving:Connect(function(p)
+    -- Xoá nút tương ứng khi người chơi thoát
+    for _, button in pairs(frame:GetChildren()) do
+        if button:IsA("TextButton") and button.Text == p.Name then
+            button:Destroy()
+        end
+    end
+end)
