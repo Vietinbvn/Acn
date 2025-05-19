@@ -1,6 +1,6 @@
 local Lighting = game:GetService("Lighting")
 
--- Xóa hết hiệu ứng post-processing cũ
+-- Xóa hết các hiệu ứng post-processing cũ
 for _, effect in pairs(Lighting:GetChildren()) do
     if effect:IsA("PostEffect") then
         effect:Destroy()
@@ -9,14 +9,14 @@ end
 
 -- BloomEffect: ánh sáng phát sáng nhẹ, không quá chói
 local bloom = Instance.new("BloomEffect")
-bloom.Intensity = 1.2      -- Giảm cường độ
-bloom.Threshold = 0.6      -- Tăng ngưỡng để giảm vùng sáng
-bloom.Size = 20            -- Kích thước vừa phải
+bloom.Intensity = 1.2
+bloom.Threshold = 0.6
+bloom.Size = 20
 bloom.Parent = Lighting
 
 -- ColorCorrectionEffect: chỉnh màu ấm áp, nhẹ nhàng
 local colorCorrection = Instance.new("ColorCorrectionEffect")
-colorCorrection.TintColor = Color3.fromRGB(255, 245, 230) -- tông sáng nhẹ, ấm
+colorCorrection.TintColor = Color3.fromRGB(255, 245, 230)
 colorCorrection.Contrast = 0.1
 colorCorrection.Brightness = 0.03
 colorCorrection.Saturation = 0.15
@@ -35,11 +35,6 @@ local sunRays = Instance.new("SunRaysEffect")
 sunRays.Intensity = 0.08
 sunRays.Spread = 0.15
 sunRays.Parent = Lighting
-
--- BlurEffect: mờ nhẹ, không làm mất nét quá nhiều
-local blur = Instance.new("BlurEffect")
-blur.Size = 3     -- Độ mờ vừa phải, tránh mờ quá
-blur.Parent = Lighting
 
 -- Atmosphere: khí quyển nhẹ, tạo cảm giác không gian thoáng đãng
 local atmosphere = Instance.new("Atmosphere")
