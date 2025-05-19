@@ -1,45 +1,87 @@
--- Tạo GUI đơn giản
-local ScreenGui = Instance.new("ScreenGui")
-local Frame = Instance.new("Frame")
-local ToggleButton = Instance.new("TextButton")
+-- Tạo GUI
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.Name = "AutoChatGUI"
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "AutoChatGUI"
 
-Frame.Size = UDim2.new(0, 200, 0, 100)
-Frame.Position = UDim2.new(0.5, -100, 0.5, -50)
-Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Frame.Parent = ScreenGui
+local toggleMenuBtn = Instance.new("TextButton")
+toggleMenuBtn.Size = UDim2.new(0, 100, 0, 30)
+toggleMenuBtn.Position = UDim2.new(0, 10, 0, 10)
+toggleMenuBtn.Text = "Hiện Menu"
+toggleMenuBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 200)
+toggleMenuBtn.Parent = gui
 
-ToggleButton.Size = UDim2.new(1, 0, 1, 0)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-ToggleButton.Text = "Auto Chat: OFF"
-ToggleButton.TextColor3 = Color3.new(1, 1, 1)
-ToggleButton.Parent = Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 200)
+frame.Position = UDim2.new(0, 10, 0, 50)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Visible = false
+frame.Parent = gui
 
--- Auto chat logic
-local autoChatEnabled = false
-local chatMessages = {
-    "Chào mọi người!",
-    "Tôi đang dùng script riêng của mình!",
-    "Bạn có khỏe không?",
-    "Script này tự động chat!"
-}
+local messageBox = Instance.new("TextBox")
+messageBox.Size = UDim2.new(1, -20, 0, 30)
+messageBox.Position = UDim2.new(0, 10, 0, 10)
+messageBox.PlaceholderText = "Nhập tin nhắn..."
+messageBox.Text = ""
+messageBox.Parent = frame
 
-local function autoChat()
-    while autoChatEnabled do
-        local message = chatMessages[math.random(1, #chatMessages)]
-        game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
-        wait(5) -- Chat mỗi 5 giây
-    end
+local delayBox = Instance.new("TextBox")
+delayBox.Size = UDim2.new(1, -20, 0, 30)
+delayBox.Position = UDim2.new(0, 10, 0, 50)
+delayBox.PlaceholderText = "Thời gian (giây)"
+delayBox.Text = "5"
+delayBox.Parent = frame
+
+local startBtn = Instance.new("TextButton")
+startBtn.Size = UDim2.new(1, -20, 0, 30)
+startBtn.Position = UDim2.new(0, 10, 0, 90)
+startBtn.Text = "Bắt đầu"
+startBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+startBtn.TextColor3 = Color3.new(1,1,1)
+startBtn.Parent = frame
+
+local stopBtn = Instance.new("TextButton")
+stopBtn.Size = UDim2.new(1, -20, 0, 30)
+stopBtn.Position = UDim2.new(0, 10, 0, 130)
+stopBtn.Text = "Dừng"
+stopBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+stopBtn.TextColor3 = Color3.new(1,1,1)
+stopBtn.Parent = frame
+
+local autoChatRunning = false
+
+-- Hiện / ẩn menu
+toggleMenuBtn.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
+    toggleMenuBtn.Text = frame.Visible and "Ẩn Menu" or "Hiện Menu"
+end)
+
+-- Hàm gửi chat
+local function startAutoChat()
+    autoChatRunning = true
+    coroutine.wrap(function()
+        while autoChatRunning do
+            local msg = messageBox.Text
+            local delayTime = tonumber(delayBox.Text) or 5
+
+            if msg ~= "" and ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") then
+                ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+            end
+            wait(delayTime)
+        end
+    end)()
 end
 
--- Bắt sự kiện khi bấm nút
-ToggleButton.MouseButton1Click:Connect(function()
-    autoChatEnabled = not autoChatEnabled
-    ToggleButton.Text = autoChatEnabled and "Auto Chat: ON" or "Auto Chat: OFF"
-
-    if autoChatEnabled then
-        coroutine.wrap(autoChat)()
+-- Nút bắt đầu
+startBtn.MouseButton1Click:Connect(function()
+    if not autoChatRunning then
+        startAutoChat()
     end
+end)
+
+-- Nút dừng
+stopBtn.MouseButton1Click:Connect(function()
+    autoChatRunning = false
 end)
