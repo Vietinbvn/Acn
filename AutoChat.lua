@@ -1,120 +1,172 @@
--- Optimize Script by PPL (FIXED)
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local CoreGui = game:GetService("CoreGui")
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
--- [1] TẮT CÁC THỨ GÂY LAG (ĐÃ FIX)
-local function optimizeEnvironment()
-    -- Xóa hạt và hiệu ứng
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ParticleEmitter") or 
-           obj:IsA("Explosion") or 
-           obj:IsA("Smoke") or 
-           obj:IsA("Sparkles") then
-            obj:Destroy()
-        end
+-- Tạo ScreenGui và Frame
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AutoMessageGui"
+screenGui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 180)
+frame.Position = UDim2.new(0.5, -150, 0.5, -90)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+frame.Active = true
+frame.Draggable = true
+
+-- Tiêu đề
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+title.Text = "Auto Message Bot"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 20
+title.Parent = frame
+
+-- Nút ẩn/hiện menu
+local toggleMenuBtn = Instance.new("TextButton")
+toggleMenuBtn.Size = UDim2.new(0, 60, 0, 25)
+toggleMenuBtn.Position = UDim2.new(1, -65, 0, 2)
+toggleMenuBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+toggleMenuBtn.Text = "Ẩn"
+toggleMenuBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleMenuBtn.Font = Enum.Font.SourceSansBold
+toggleMenuBtn.TextSize = 14
+toggleMenuBtn.Parent = frame
+
+-- Các thành phần trong menu (để dễ ẩn hiện)
+local menuElements = {}
+
+-- Nội dung nhắn
+local msgLabel = Instance.new("TextLabel")
+msgLabel.Size = UDim2.new(1, -20, 0, 25)
+msgLabel.Position = UDim2.new(0, 10, 0, 40)
+msgLabel.BackgroundTransparency = 1
+msgLabel.Text = "Nội dung nhắn:"
+msgLabel.TextColor3 = Color3.new(1, 1, 1)
+msgLabel.Font = Enum.Font.SourceSans
+msgLabel.TextSize = 18
+msgLabel.TextXAlignment = Enum.TextXAlignment.Left
+msgLabel.Parent = frame
+table.insert(menuElements, msgLabel)
+
+local msgBox = Instance.new("TextBox")
+msgBox.Size = UDim2.new(1, -20, 0, 30)
+msgBox.Position = UDim2.new(0, 10, 0, 65)
+msgBox.PlaceholderText = "Nhập nội dung tin nhắn..."
+msgBox.Text = ""
+msgBox.ClearTextOnFocus = false
+msgBox.TextColor3 = Color3.new(0, 0, 0)
+msgBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+msgBox.Font = Enum.Font.SourceSans
+msgBox.TextSize = 18
+msgBox.Parent = frame
+table.insert(menuElements, msgBox)
+
+-- Thời gian lặp lại
+local timeLabel = Instance.new("TextLabel")
+timeLabel.Size = UDim2.new(1, -20, 0, 25)
+timeLabel.Position = UDim2.new(0, 10, 0, 100)
+timeLabel.BackgroundTransparency = 1
+timeLabel.Text = "Thời gian lặp lại (giây):"
+timeLabel.TextColor3 = Color3.new(1, 1, 1)
+timeLabel.Font = Enum.Font.SourceSans
+timeLabel.TextSize = 18
+timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+timeLabel.Parent = frame
+table.insert(menuElements, timeLabel)
+
+local timeBox = Instance.new("TextBox")
+timeBox.Size = UDim2.new(1, -20, 0, 30)
+timeBox.Position = UDim2.new(0, 10, 0, 125)
+timeBox.PlaceholderText = "Nhập số giây..."
+timeBox.Text = ""
+timeBox.ClearTextOnFocus = false
+timeBox.TextColor3 = Color3.new(0, 0, 0)
+timeBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+timeBox.Font = Enum.Font.SourceSans
+timeBox.TextSize = 18
+timeBox.Parent = frame
+table.insert(menuElements, timeBox)
+
+-- Nút Bật/Tắt
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 100, 0, 35)
+toggleBtn.Position = UDim2.new(0.5, -50, 1, -45)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+toggleBtn.Text = "Bắt đầu"
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.TextSize = 20
+toggleBtn.Parent = frame
+table.insert(menuElements, toggleBtn)
+
+-- Biến trạng thái
+local isRunning = false
+local message = ""
+local interval = 5
+
+-- Hàm gửi tin nhắn chat
+local function sendMessage(msg)
+    if msg ~= "" then
+        game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
     end
-
-    -- Tắt shadow không cần thiết
-    settings().Rendering.QualityLevel = 1
-    settings().Rendering.Shadows = false
-    
-    -- Giảm chất lượng terrain
-    workspace.Terrain.WaterWaveSize = 0
-    workspace.Terrain.WaterWaveSpeed = 0
-    workspace.Terrain.Decoration = false
 end
 
--- [2] FPS COUNTER (ĐÃ FIX DÒNG 21)
-local function createFPSCounter()
-    local fpsGui = Instance.new("ScreenGui")
-    fpsGui.Name = "FPS_Monitor"
-    fpsGui.ResetOnSpawn = false
-    fpsGui.Parent = CoreGui
+-- Coroutine gửi tin nhắn lặp lại
+local messageCoroutine
 
-    local fpsText = Instance.new("TextLabel")
-    fpsText.Size = UDim2.new(0, 100, 0, 30)
-    fpsText.Position = UDim2.new(1, -110, 0, 10)
-    fpsText.BackgroundTransparency = 0.7
-    fpsText.BackgroundColor3 = Color3.new(0, 0, 0)
-    fpsText.TextColor3 = Color3.new(1, 1, 1)
-    fpsText.Font = Enum.Font.SourceSansBold
-    fpsText.TextSize = 18
-    fpsText.Text = "FPS: 0"
-    fpsText.Parent = fpsGui
+toggleBtn.MouseButton1Click:Connect(function()
+    if not isRunning then
+        message = msgBox.Text
+        interval = tonumber(timeBox.Text)
 
-    local frameTimes = {}
-    local function updateFPS()
-        local now = tick()
-        table.insert(frameTimes, now)
-        
-        -- Giữ 60 frame gần nhất
-        while #frameTimes > 60 do
-            table.remove(frameTimes, 1)
+        if message == "" then
+            warn("Vui lòng nhập nội dung tin nhắn!")
+            return
         end
-        
-        -- Tính FPS trung bình
-        if #frameTimes > 1 then
-            local fps = math.floor(#frameTimes / (now - frameTimes[1]))
-            fpsText.Text = "FPS: " .. fps
+        if not interval or interval < 1 then
+            warn("Thời gian lặp lại phải là số nguyên lớn hơn hoặc bằng 1 giây!")
+            return
         end
-    end
 
-    RunService.Heartbeat:Connect(updateFPS)
-end
+        isRunning = true
+        toggleBtn.Text = "Dừng"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
 
--- [3] CHỈNH FONT SANG SANS (ĐÃ FIX DÒNG 102)
-local function applySansFont()
-    -- Đợi PlayerGui tồn tại
-    if not LocalPlayer:FindFirstChild("PlayerGui") then
-        LocalPlayer:WaitForChild("PlayerGui")
-    end
-    
-    local function updateFont(obj)
-        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-            pcall(function()
-                obj.Font = Enum.Font.SourceSans
-                if obj:IsA("TextLabel") and string.find(obj.Name:lower(), "title") then
-                    obj.Font = Enum.Font.SourceSansBold
-                end
-            end)
-        end
-    end
-
-    -- Quét toàn bộ GUI
-    for _, gui in pairs(LocalPlayer.PlayerGui:GetDescendants()) do
-        updateFont(gui)
-    end
-    
-    LocalPlayer.PlayerGui.DescendantAdded:Connect(updateFont)
-end
-
--- [4] TẮT RENDER KHU VỰC KHÔNG THẤY (ĐÃ FIX)
-local function cullDistantObjects()
-    local camera = workspace.CurrentCamera
-    local originalFieldOfView = camera.FieldOfView
-    
-    -- Giữ nguyên camera type
-    camera.CameraType = Enum.CameraType.Custom
-    
-    local function updateViewDistance()
-        -- Chỉ render trong phạm vi 500 studs
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                local distance = (obj.Position - camera.CFrame.Position).Magnitude
-                obj.LocalTransparencyModifier = (distance > 500) and 1 or 0
+        -- Tạo coroutine gửi tin nhắn
+        messageCoroutine = coroutine.create(function()
+            while isRunning do
+                sendMessage(message)
+                wait(interval)
             end
-        end
+        end)
+        coroutine.resume(messageCoroutine)
+    else
+        isRunning = false
+        toggleBtn.Text = "Bắt đầu"
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
     end
-    
-    RunService.RenderStepped:Connect(updateViewDistance)
-end
+end)
 
--- [5] KÍCH HOẠT TẤT CẢ
-optimizeEnvironment()
-createFPSCounter()
-applySansFont()
-cullDistantObjects()
-
-print("Tối ưu hóa hoàn tất! FPS counter đã hiển thị")
+-- Xử lý nút ẩn/hiện menu
+toggleMenuBtn.MouseButton1Click:Connect(function()
+    if menuElements[1].Visible then
+        -- Ẩn tất cả thành phần
+        for _, element in pairs(menuElements) do
+            element.Visible = false
+        end
+        toggleMenuBtn.Text = "Hiện"
+        -- Thu nhỏ frame để chỉ còn tiêu đề + nút
+        frame.Size = UDim2.new(0, 300, 0, 35)
+    else
+        -- Hiện lại tất cả thành phần
+        for _, element in pairs(menuElements) do
+            element.Visible = true
+        end
+        toggleMenuBtn.Text = "Ẩn"
+        frame.Size = UDim2.new(0, 300, 0, 180)
+    end
+end)
