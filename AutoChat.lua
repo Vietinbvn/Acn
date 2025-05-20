@@ -30,30 +30,30 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Hàm tìm người chơi không phân biệt hoa thường
-local function findPlayerByName(name)
-    local lowerName = name:lower()
+-- Hàm tìm người chơi theo tên gần đúng (partial match, không phân biệt hoa thường)
+local function findPlayerByPartialName(partialName)
+    local lowerPartial = partialName:lower()
     for _, player in pairs(Players:GetPlayers()) do
-        if player.Name:lower() == lowerName then
+        if player.Name:lower():find(lowerPartial, 1, true) then
             return player
         end
     end
     return nil
 end
 
--- Lắng nghe chat lệnh -Tp [tên người chơi]
+-- Lắng nghe chat lệnh t [tên gần đúng]
 LocalPlayer.Chatted:Connect(function(msg)
-    local prefix = "-Tp "
-    if msg:sub(1, #prefix):lower() == prefix:lower() then
-        local targetName = msg:sub(#prefix + 1)
-        if targetName ~= "" then
-            local target = findPlayerByName(targetName)
+    local prefix = "t "
+    if msg:sub(1, #prefix):lower() == prefix then
+        local partialName = msg:sub(#prefix + 1)
+        if partialName ~= "" then
+            local target = findPlayerByPartialName(partialName)
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
             and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
                 print("Đã teleport đến "..target.Name)
             else
-                print("Không tìm thấy người chơi hoặc họ chưa có nhân vật.")
+                print("Không tìm thấy người chơi phù hợp hoặc họ chưa có nhân vật.")
             end
         end
     end
