@@ -1,44 +1,37 @@
--- Ducscript - By Duc_Nhat (Fix & Optimize Rayfield)
+-- Ducscript - By Duc_Nhat (Fix + Improve)
+-- Rayfield UI chuẩn: https://github.com/shlexware/Rayfield
 
--- Khởi tạo thư viện UI Rayfield (đảm bảo load 1 lần duy nhất)
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local TeleportPlayer
 
--- Biến lưu trạng thái và kết nối Speed Boost
-local speedBoostConnection = nil
+-- Biến lưu trạng thái
+local speedBoostConnection
+local antiAFKConnection
 local espEnabled = false
+local espConnections = {}
 
 -- UI
 local Window = Rayfield:CreateWindow({
     Name = "Ducscript - By Duc_Nhat",
     LoadingTitle = "Ducscript v1.0",
     LoadingSubtitle = "Tạo bởi Duc_Nhat",
-    ConfigurationSaving = {
-        Enabled = false
-    },
-    Discord = {
-        Enabled = false
-    },
+    ConfigurationSaving = { Enabled = false },
+    Discord = { Enabled = false },
     KeySystem = false
 })
 
 -- Tab 1: Gameplay
 local Tab1 = Window:CreateTab("Gameplay", "🏃‍♂️")
 
--- Speed Boost Toggle
 Tab1:CreateToggle({
     Name = "Speed Boost",
     CurrentValue = false,
     Callback = function(state)
         if state then
-            -- Ngắt kết nối cũ nếu có để tránh trùng lặp
-            if speedBoostConnection then
-                speedBoostConnection:Disconnect()
-            end
+            if speedBoostConnection then speedBoostConnection:Disconnect() end
             speedBoostConnection = RunService.Stepped:Connect(function()
                 pcall(function()
                     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
@@ -47,10 +40,7 @@ Tab1:CreateToggle({
                 end)
             end)
         else
-            if speedBoostConnection then
-                speedBoostConnection:Disconnect()
-                speedBoostConnection = nil
-            end
+            if speedBoostConnection then speedBoostConnection:Disconnect() end
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
                 LocalPlayer.Character.Humanoid.WalkSpeed = 16
             end
@@ -58,29 +48,24 @@ Tab1:CreateToggle({
     end,
 })
 
--- Jump Boost Toggle
 Tab1:CreateToggle({
     Name = "Jump Boost",
     CurrentValue = false,
     Callback = function(state)
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            if state then
-                LocalPlayer.Character.Humanoid.JumpPower = 120
-            else
-                LocalPlayer.Character.Humanoid.JumpPower = 50
-            end
+            LocalPlayer.Character.Humanoid.JumpPower = state and 120 or 50
         end
     end,
 })
 
--- Anti-AFK Toggle
 Tab1:CreateToggle({
     Name = "Anti-AFK",
     CurrentValue = false,
     Callback = function(state)
+        if antiAFKConnection then antiAFKConnection:Disconnect() end
         if state then
             local vu = game:GetService("VirtualUser")
-            Players.LocalPlayer.Idled:Connect(function()
+            antiAFKConnection = Players.LocalPlayer.Idled:Connect(function()
                 vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
                 wait(1)
                 vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
@@ -118,36 +103,47 @@ local function removeESP(player)
     end
 end
 
+local function setupESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            createESP(player)
+            espConnections[player] = player.CharacterAdded:Connect(function()
+                wait(0.2)
+                createESP(player)
+            end)
+        end
+    end
+    espConnections["PlayerAdded"] = Players.PlayerAdded:Connect(function(player)
+        if player ~= LocalPlayer then
+            player.CharacterAdded:Connect(function()
+                wait(0.2)
+                createESP(player)
+            end)
+        end
+    end)
+end
+
+local function cleanupESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        removeESP(player)
+    end
+    for _, conn in pairs(espConnections) do
+        if typeof(conn) == "RBXScriptConnection" then
+            conn:Disconnect()
+        end
+    end
+    espConnections = {}
+end
+
 Tab2:CreateToggle({
     Name = "Player ESP",
     CurrentValue = false,
     Callback = function(state)
         espEnabled = state
         if state then
-            -- Tạo ESP cho tất cả người chơi hiện tại
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer then
-                    createESP(player)
-                end
-            end
-            -- Tự động thêm ESP khi có người chơi mới vào
-            Players.PlayerAdded:Connect(function(player)
-                if espEnabled and player ~= LocalPlayer then
-                    player.CharacterAdded:Connect(function()
-                        wait(0.1) -- Đợi nhân vật load
-                        createESP(player)
-                    end)
-                end
-            end)
-            -- Xóa ESP khi người chơi rời
-            Players.PlayerRemoving:Connect(function(player)
-                removeESP(player)
-            end)
+            setupESP()
         else
-            -- Xóa tất cả ESP khi tắt
-            for _, player in pairs(Players:GetPlayers()) do
-                removeESP(player)
-            end
+            cleanupESP()
         end
     end
 })
@@ -156,19 +152,20 @@ Tab2:CreateToggle({
 local Tab3 = Window:CreateTab("Teleport", "⚡")
 
 local playerList = {}
-
 local function updatePlayerList()
     playerList = {}
-    for _, v in pairs(Players:GetPlayers()) do
+    for _, v in ipairs(Players:GetPlayers()) do
         if v ~= LocalPlayer then
             table.insert(playerList, v.Name)
         end
     end
-    -- Cập nhật dropdown options
-    TeleportDropdown:SetOptions(playerList)
+    if Tab3TeleportDropdown then
+        Tab3TeleportDropdown:SetOptions(playerList)
+    end
 end
 
-local TeleportDropdown = Tab3:CreateDropdown({
+local TeleportPlayer
+local Tab3TeleportDropdown = Tab3:CreateDropdown({
     Name = "Chọn người để Teleport tới",
     Options = playerList,
     CurrentOption = "",
@@ -182,18 +179,16 @@ Tab3:CreateButton({
     Callback = function()
         if TeleportPlayer then
             local target = Players:FindFirstChild(TeleportPlayer)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+            and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                 LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
             end
         end
     end
 })
 
--- Cập nhật danh sách người chơi khi có người vào hoặc rời
 Players.PlayerAdded:Connect(updatePlayerList)
 Players.PlayerRemoving:Connect(updatePlayerList)
-
--- Khởi tạo danh sách người chơi ban đầu
 updatePlayerList()
 
 -- Tab 4: Thông tin
@@ -203,17 +198,18 @@ Tab4:CreateParagraph({
     Content = "Phiên bản: 1.0\nUI: Rayfield\nChức năng: ESP, Speed, Jump, Anti-AFK, Teleport"
 })
 
--- Xử lý khi nhân vật load lại (để reset WalkSpeed và JumpPower nếu toggle đang bật)
+-- Đảm bảo khi nhân vật load lại sẽ cập nhật đúng trạng thái
 LocalPlayer.CharacterAdded:Connect(function(character)
-    wait(1) -- Đợi nhân vật load xong
+    wait(1)
     local humanoid = character:WaitForChild("Humanoid")
+    -- Speed
     if speedBoostConnection then
         humanoid.WalkSpeed = 100
     else
         humanoid.WalkSpeed = 16
     end
-    -- Jump Boost
-    if Tab1:GetToggle("Jump Boost").CurrentValue then
+    -- Jump
+    if Tab1:GetToggle("Jump Boost") and Tab1:GetToggle("Jump Boost").CurrentValue then
         humanoid.JumpPower = 120
     else
         humanoid.JumpPower = 50
