@@ -7,51 +7,70 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TeleportAndESP"
 screenGui.Parent = playerGui
 
+-- Khung chính
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 280, 0, 350)
+frame.Size = UDim2.new(0, 300, 0, 380)
 frame.Position = UDim2.new(0, 20, 0, 50)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
 frame.Active = true
 frame.Draggable = true
+frame.ClipsDescendants = true
 
+-- Bo tròn cho frame
+local frameUICorner = Instance.new("UICorner")
+frameUICorner.CornerRadius = UDim.new(0, 12)
+frameUICorner.Parent = frame
+
+-- Tiêu đề
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+title.Size = UDim2.new(1, 0, 0, 45)
+title.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+title.BorderSizePixel = 0
 title.Text = "🛸 Teleport & ESP Menu"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 22
+title.TextSize = 24
 title.Parent = frame
+
+local titleUICorner = Instance.new("UICorner")
+titleUICorner.CornerRadius = UDim.new(0, 12)
+titleUICorner.Parent = title
 
 -- Nút tắt/mở menu
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0, 40, 0, 40)
-toggleBtn.Position = UDim2.new(1, 5, 0, 0)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+toggleBtn.Size = UDim2.new(0, 45, 0, 45)
+toggleBtn.Position = UDim2.new(1, -50, 0, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
 toggleBtn.Font = Enum.Font.GothamBold
-toggleBtn.TextSize = 24
+toggleBtn.TextSize = 28
 toggleBtn.Text = "❌"
 toggleBtn.Parent = frame
 
+local toggleUICorner = Instance.new("UICorner")
+toggleUICorner.CornerRadius = UDim.new(0, 12)
+toggleUICorner.Parent = toggleBtn
+
+-- ScrollFrame chứa danh sách người chơi
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -20, 1, -90)
-scrollFrame.Position = UDim2.new(0, 10, 0, 50)
+scrollFrame.Size = UDim2.new(1, -20, 1, -120)
+scrollFrame.Position = UDim2.new(0, 10, 0, 60)
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.ScrollBarThickness = 6
+scrollFrame.ScrollBarThickness = 8
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.Parent = frame
 
 local listLayout = Instance.new("UIListLayout")
 listLayout.Parent = scrollFrame
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Padding = UDim.new(0, 6)
+listLayout.Padding = UDim.new(0, 8)
 
+-- Label trạng thái ESP
 local espStatusLabel = Instance.new("TextLabel")
 espStatusLabel.Size = UDim2.new(1, -20, 0, 30)
-espStatusLabel.Position = UDim2.new(0, 10, 1, -35)
+espStatusLabel.Position = UDim2.new(0, 10, 1, -50)
 espStatusLabel.BackgroundTransparency = 1
 espStatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 espStatusLabel.Font = Enum.Font.Gotham
@@ -60,15 +79,20 @@ espStatusLabel.Text = "ESP: Tắt"
 espStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 espStatusLabel.Parent = frame
 
+-- Nút bật/tắt ESP
 local espToggleBtn = Instance.new("TextButton")
-espToggleBtn.Size = UDim2.new(0, 80, 0, 30)
-espToggleBtn.Position = UDim2.new(1, -90, 1, -40)
-espToggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+espToggleBtn.Size = UDim2.new(0, 90, 0, 35)
+espToggleBtn.Position = UDim2.new(1, -110, 1, -55)
+espToggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
 espToggleBtn.TextColor3 = Color3.new(1, 1, 1)
 espToggleBtn.Font = Enum.Font.GothamBold
-espToggleBtn.TextSize = 16
+espToggleBtn.TextSize = 18
 espToggleBtn.Text = "Bật ESP"
 espToggleBtn.Parent = frame
+
+local espToggleUICorner = Instance.new("UICorner")
+espToggleUICorner.CornerRadius = UDim.new(0, 12)
+espToggleUICorner.Parent = espToggleBtn
 
 -- === Logic teleport ===
 
@@ -89,13 +113,17 @@ end
 
 local function createPlayerButton(targetPlayer)
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -20, 0, 30)
-    button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    button.Size = UDim2.new(1, -20, 0, 35)
+    button.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
     button.TextColor3 = Color3.new(1, 1, 1)
     button.Font = Enum.Font.Gotham
     button.TextSize = 18
     button.Text = targetPlayer.Name
     button.Parent = scrollFrame
+
+    local buttonUICorner = Instance.new("UICorner")
+    buttonUICorner.CornerRadius = UDim.new(0, 10)
+    buttonUICorner.Parent = button
 
     button.MouseButton1Click:Connect(function()
         teleportToPlayer(targetPlayer)
