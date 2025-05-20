@@ -1,60 +1,67 @@
-local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local Stats = game:GetService("Stats")
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
+local Players = game:GetService("Players")
 
--- FPS Label (góc trên phải)
-local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "SimpleFPSandTP"
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
-local fpsLabel = Instance.new("TextLabel", gui)
-fpsLabel.Size = UDim2.new(0, 100, 0, 30)
-fpsLabel.Position = UDim2.new(1, -110, 0, 10)
-fpsLabel.BackgroundColor3 = Color3.fromRGB(30,30,30)
-fpsLabel.BorderSizePixel = 0
-fpsLabel.TextColor3 = Color3.new(1,1,1)
-fpsLabel.Font = Enum.Font.GothamBold
-fpsLabel.TextSize = 18
-fpsLabel.Text = "FPS: 0"
-fpsLabel.TextStrokeTransparency = 0.7
+-- Tạo ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = playerGui
 
-local lastTime = tick()
-local frameCount = 0
+-- Hiển thị chữ khi bắt đầu
+local splashText = Instance.new("TextLabel")
+splashText.Size = UDim2.new(1, 0, 1, 0)
+splashText.BackgroundColor3 = Color3.new(0, 0, 0)
+splashText.TextColor3 = Color3.new(1, 1, 1)
+splashText.Text = "DucScript-By Duc_Nhat"
+splashText.TextScaled = true
+splashText.TextTransparency = 1
+splashText.Parent = screenGui
 
+local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local tweenIn = TweenService:Create(splashText, tweenInfo, { TextTransparency = 0 })
+local tweenOut = TweenService:Create(splashText, tweenInfo, { TextTransparency = 1 })
+
+tweenIn:Play()
+tweenIn.Completed:Wait()
+wait(5)
+tweenOut:Play()
+tweenOut.Completed:Wait()
+splashText:Destroy()
+
+-- Tạo Frame UI chính
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 150)
+mainFrame.Position = UDim2.new(0, 10, 0, 10)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BackgroundTransparency = 0.3
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+-- Tạo TextLabel hiển thị thông tin
+local infoLabel = Instance.new("TextLabel")
+infoLabel.Size = UDim2.new(1, -10, 1, -10)
+infoLabel.Position = UDim2.new(0, 5, 0, 5)
+infoLabel.BackgroundTransparency = 1
+infoLabel.TextColor3 = Color3.new(1, 1, 1)
+infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+infoLabel.TextYAlignment = Enum.TextYAlignment.Top
+infoLabel.TextWrapped = true
+infoLabel.Font = Enum.Font.SourceSans
+infoLabel.TextSize = 14
+infoLabel.Parent = mainFrame
+
+-- Cập nhật thông tin mỗi giây
 RunService.RenderStepped:Connect(function()
-    frameCount = frameCount + 1
-    local now = tick()
-    if now - lastTime >= 1 then
-        fpsLabel.Text = "FPS: "..frameCount
-        frameCount = 0
-        lastTime = now
-    end
-end)
+    local ping = Stats.Network.ServerStatsItem and Stats.Network.ServerStatsItem["Data Ping"] and Stats.Network.ServerStatsItem["Data Ping"].Value or 0
+    local serverTime = os.date("%X", os.time())
+    local version = game.PlaceVersion or "Unknown"
+    local fps = math.floor(1 / RunService.RenderStepped:Wait())
 
--- Hàm tìm người chơi theo tên gần đúng (partial match, không phân biệt hoa thường)
-local function findPlayerByPartialName(partialName)
-    local lowerPartial = partialName:lower()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player.Name:lower():find(lowerPartial, 1, true) then
-            return player
-        end
-    end
-    return nil
-end
-
--- Lắng nghe chat lệnh t [tên gần đúng]
-LocalPlayer.Chatted:Connect(function(msg)
-    local prefix = "t "
-    if msg:sub(1, #prefix):lower() == prefix then
-        local partialName = msg:sub(#prefix + 1)
-        if partialName ~= "" then
-            local target = findPlayerByPartialName(partialName)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-            and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
-                print("Đã teleport đến "..target.Name)
-            else
-                print("Không tìm thấy người chơi phù hợp hoặc họ chưa có nhân vật.")
-            end
-        end
-    end
+    infoLabel.Text = string.format(
+        "Ping: %d ms\nFPS: %d\nThời gian Server: %s\nPhiên bản máy chủ: %s",
+        ping, fps, serverTime, version
+    )
 end)
