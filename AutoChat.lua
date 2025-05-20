@@ -1,11 +1,8 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
-
-local teleportEvent = ReplicatedStorage:WaitForChild("RequestTeleportToPlayer")
-
--- Tạo GUI đơn giản
 local playerGui = player:WaitForChild("PlayerGui")
+
+-- Tạo GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TeleportMenu"
 screenGui.Parent = playerGui
@@ -30,7 +27,21 @@ listLayout.Parent = frame
 listLayout.Padding = UDim.new(0, 5)
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Hàm tạo nút cho từng người chơi
+local function teleportToPlayer(targetPlayer)
+    if targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        local targetHRP = targetPlayer.Character.HumanoidRootPart
+        if hrp then
+            hrp.CFrame = targetHRP.CFrame * CFrame.new(0, 3, 0)
+            print("Đã teleport đến " .. targetPlayer.Name)
+        else
+            warn("Không tìm thấy HumanoidRootPart của bạn.")
+        end
+    else
+        warn("Người chơi không có nhân vật hoặc HumanoidRootPart.")
+    end
+end
+
 local function createPlayerButton(targetPlayer)
     local button = Instance.new("TextButton")
     button.Size = UDim2.new(1, -20, 0, 30)
@@ -42,13 +53,13 @@ local function createPlayerButton(targetPlayer)
     button.Parent = frame
 
     button.MouseButton1Click:Connect(function()
-        teleportEvent:FireServer(targetPlayer.Name)
+        teleportToPlayer(targetPlayer)
     end)
 end
 
 -- Tạo danh sách người chơi ban đầu
 for _, p in pairs(Players:GetPlayers()) do
-    if p ~= player then -- không hiện tên chính mình
+    if p ~= player then
         createPlayerButton(p)
     end
 end
@@ -61,7 +72,6 @@ Players.PlayerAdded:Connect(function(p)
 end)
 
 Players.PlayerRemoving:Connect(function(p)
-    -- Xoá nút tương ứng khi người chơi thoát
     for _, button in pairs(frame:GetChildren()) do
         if button:IsA("TextButton") and button.Text == p.Name then
             button:Destroy()
