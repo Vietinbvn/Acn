@@ -1,83 +1,72 @@
--- Ducscript - By Duc_Nhat (Fix + Improve)
--- Rayfield UI chuẩn: https://github.com/shlexware/Rayfield
-
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
-
+-- Ducscript Không UI - Điều khiển bằng lệnh chat
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- Biến lưu trạng thái
-local speedBoostConnection
-local antiAFKConnection
-local espEnabled = false
+-- Trạng thái
+local speedOn = false
+local jumpOn = false
+local espOn = false
+local antiAFKOn = false
+local speedConn
+local afkConn
 local espConnections = {}
 
--- UI
-local Window = Rayfield:CreateWindow({
-    Name = "Ducscript - By Duc_Nhat",
-    LoadingTitle = "Ducscript v1.0",
-    LoadingSubtitle = "Tạo bởi Duc_Nhat",
-    ConfigurationSaving = { Enabled = false },
-    Discord = { Enabled = false },
-    KeySystem = false
-})
-
--- Tab 1: Gameplay
-local Tab1 = Window:CreateTab("Gameplay", "🏃‍♂️")
-
-Tab1:CreateToggle({
-    Name = "Speed Boost",
-    CurrentValue = false,
-    Callback = function(state)
-        if state then
-            if speedBoostConnection then speedBoostConnection:Disconnect() end
-            speedBoostConnection = RunService.Stepped:Connect(function()
-                pcall(function()
-                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                        LocalPlayer.Character.Humanoid.WalkSpeed = 100
-                    end
-                end)
-            end)
-        else
-            if speedBoostConnection then speedBoostConnection:Disconnect() end
+-- SPEED
+function enableSpeed()
+    if speedConn then speedConn:Disconnect() end
+    speedConn = RunService.Stepped:Connect(function()
+        pcall(function()
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                LocalPlayer.Character.Humanoid.WalkSpeed = 16
+                LocalPlayer.Character.Humanoid.WalkSpeed = 100
             end
-        end
-    end,
-})
+        end)
+    end)
+    speedOn = true
+end
 
-Tab1:CreateToggle({
-    Name = "Jump Boost",
-    CurrentValue = false,
-    Callback = function(state)
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.JumpPower = state and 120 or 50
-        end
-    end,
-})
+function disableSpeed()
+    if speedConn then speedConn:Disconnect() end
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = 16
+    end
+    speedOn = false
+end
 
-Tab1:CreateToggle({
-    Name = "Anti-AFK",
-    CurrentValue = false,
-    Callback = function(state)
-        if antiAFKConnection then antiAFKConnection:Disconnect() end
-        if state then
-            local vu = game:GetService("VirtualUser")
-            antiAFKConnection = Players.LocalPlayer.Idled:Connect(function()
-                vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                wait(1)
-                vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            end)
-        end
-    end,
-})
+-- JUMP
+function enableJump()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.JumpPower = 120
+    end
+    jumpOn = true
+end
 
--- Tab 2: ESP
-local Tab2 = Window:CreateTab("ESP", "👁️")
+function disableJump()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.JumpPower = 50
+    end
+    jumpOn = false
+end
 
-local function createESP(player)
+-- ANTI AFK
+function enableAFK()
+    if afkConn then afkConn:Disconnect() end
+    local vu = game:GetService("VirtualUser")
+    afkConn = LocalPlayer.Idled:Connect(function()
+        vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        wait(1)
+        vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    end)
+    antiAFKOn = true
+end
+
+function disableAFK()
+    if afkConn then afkConn:Disconnect() end
+    antiAFKOn = false
+end
+
+-- ESP
+function createESP(player)
     if player.Character and player.Character:FindFirstChild("Head") and not player.Character.Head:FindFirstChild("ESP") then
         local esp = Instance.new("BillboardGui")
         esp.Name = "ESP"
@@ -96,14 +85,14 @@ local function createESP(player)
     end
 end
 
-local function removeESP(player)
+function removeESP(player)
     if player.Character and player.Character:FindFirstChild("Head") then
         local esp = player.Character.Head:FindFirstChild("ESP")
         if esp then esp:Destroy() end
     end
 end
 
-local function setupESP()
+function enableESP()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             createESP(player)
@@ -121,9 +110,10 @@ local function setupESP()
             end)
         end
     end)
+    espOn = true
 end
 
-local function cleanupESP()
+function disableESP()
     for _, player in ipairs(Players:GetPlayers()) do
         removeESP(player)
     end
@@ -133,85 +123,66 @@ local function cleanupESP()
         end
     end
     espConnections = {}
+    espOn = false
 end
 
-Tab2:CreateToggle({
-    Name = "Player ESP",
-    CurrentValue = false,
-    Callback = function(state)
-        espEnabled = state
-        if state then
-            setupESP()
-        else
-            cleanupESP()
-        end
-    end
-})
-
--- Tab 3: Teleport
-local Tab3 = Window:CreateTab("Teleport", "⚡")
-
-local playerList = {}
-local function updatePlayerList()
-    playerList = {}
-    for _, v in ipairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer then
-            table.insert(playerList, v.Name)
-        end
-    end
-    if Tab3TeleportDropdown then
-        Tab3TeleportDropdown:SetOptions(playerList)
+-- TELEPORT
+function teleportToPlayer(name)
+    local target = Players:FindFirstChild(name)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+    and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
     end
 end
 
-local TeleportPlayer
-local Tab3TeleportDropdown = Tab3:CreateDropdown({
-    Name = "Chọn người để Teleport tới",
-    Options = playerList,
-    CurrentOption = "",
-    Callback = function(value)
-        TeleportPlayer = value
+-- LỆNH CHAT
+LocalPlayer.Chatted:Connect(function(msg)
+    msg = msg:lower()
+    if msg == "/speed on" then
+        enableSpeed()
+        print("[Ducscript] Speed ON")
+    elseif msg == "/speed off" then
+        disableSpeed()
+        print("[Ducscript] Speed OFF")
+    elseif msg == "/jump on" then
+        enableJump()
+        print("[Ducscript] Jump ON")
+    elseif msg == "/jump off" then
+        disableJump()
+        print("[Ducscript] Jump OFF")
+    elseif msg == "/esp on" then
+        enableESP()
+        print("[Ducscript] ESP ON")
+    elseif msg == "/esp off" then
+        disableESP()
+        print("[Ducscript] ESP OFF")
+    elseif msg == "/afk on" then
+        enableAFK()
+        print("[Ducscript] Anti-AFK ON")
+    elseif msg == "/afk off" then
+        disableAFK()
+        print("[Ducscript] Anti-AFK OFF")
+    elseif msg:sub(1,4) == "/tp " then
+        local name = msg:sub(5)
+        teleportToPlayer(name)
+        print("[Ducscript] Teleport to " .. name)
     end
-})
+end)
 
-Tab3:CreateButton({
-    Name = "Teleport đến người chơi đã chọn",
-    Callback = function()
-        if TeleportPlayer then
-            local target = Players:FindFirstChild(TeleportPlayer)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-            and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-            end
-        end
-    end
-})
-
-Players.PlayerAdded:Connect(updatePlayerList)
-Players.PlayerRemoving:Connect(updatePlayerList)
-updatePlayerList()
-
--- Tab 4: Thông tin
-local Tab4 = Window:CreateTab("Thông tin", "ℹ️")
-Tab4:CreateParagraph({
-    Title = "Script By Duc_Nhat",
-    Content = "Phiên bản: 1.0\nUI: Rayfield\nChức năng: ESP, Speed, Jump, Anti-AFK, Teleport"
-})
-
--- Đảm bảo khi nhân vật load lại sẽ cập nhật đúng trạng thái
+-- TỰ ĐỘNG RESET KHI NHÂN VẬT LOAD LẠI
 LocalPlayer.CharacterAdded:Connect(function(character)
     wait(1)
     local humanoid = character:WaitForChild("Humanoid")
-    -- Speed
-    if speedBoostConnection then
+    if speedOn then
         humanoid.WalkSpeed = 100
     else
         humanoid.WalkSpeed = 16
     end
-    -- Jump
-    if Tab1:GetToggle("Jump Boost") and Tab1:GetToggle("Jump Boost").CurrentValue then
+    if jumpOn then
         humanoid.JumpPower = 120
     else
         humanoid.JumpPower = 50
     end
 end)
+
+print("Ducscript không UI đã load! Gõ lệnh vào chat để dùng.")
