@@ -132,15 +132,16 @@ local function createMenu()
 
     -- Menu chính (ẩn ban đầu)
     local menuFrame = Instance.new("Frame")
+    menuFrame.Name = "MenuFrame" -- Thêm Name để dễ tìm
     menuFrame.Size = UDim2.new(0, 250, 0, 160)
     menuFrame.Position = UDim2.new(0, 10, 0, 70)
     menuFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     menuFrame.BackgroundTransparency = 1 -- ẩn ban đầu
-    menuFrame.Parent = menuGui
     menuFrame.Visible = false
     menuFrame.ClipsDescendants = true
     menuFrame.BorderSizePixel = 0
     menuFrame.ZIndex = 4
+    menuFrame.Parent = menuGui -- Đặt Parent ở đây
 
     local uicorner = Instance.new("UICorner")
     uicorner.CornerRadius = UDim.new(0, 15)
@@ -289,9 +290,12 @@ local function createMenu()
     local keyGui = Instance.new("ScreenGui")
     keyGui.Name = "KeyGui"
     keyGui.Parent = playerGui
+    keyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    keyGui.ResetOnSpawn = false
     keyGui.Enabled = false
 
     local frame = Instance.new("Frame")
+    frame.Name = "KeyFrame"
     frame.Size = UDim2.new(0, 300, 0, 150)
     frame.Position = UDim2.new(0.5, -150, 0.5, -75)
     frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -315,6 +319,7 @@ local function createMenu()
     title.Parent = frame
 
     local textBox = Instance.new("TextBox")
+    textBox.Name = "KeyTextBox"
     textBox.Size = UDim2.new(1, -40, 0, 40)
     textBox.Position = UDim2.new(0, 20, 0, 60)
     textBox.ClearTextOnFocus = false
@@ -331,6 +336,7 @@ local function createMenu()
     uicornerText.Parent = textBox
 
     local submitBtn = Instance.new("TextButton")
+    submitBtn.Name = "KeySubmitButton"
     submitBtn.Size = UDim2.new(0, 100, 0, 30)
     submitBtn.Position = UDim2.new(0.5, -50, 1, -40)
     submitBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
@@ -348,7 +354,7 @@ local function createMenu()
         guiObject.Visible = true
         local tween = TweenService:Create(guiObject, TweenInfo.new(duration), {BackgroundTransparency = 0.3})
         tween:Play()
-        tween.Completed:Wait()
+        --tween.Completed:Wait() -- Không cần wait ở đây
     end
 
     -- Hàm fade out
@@ -362,16 +368,19 @@ local function createMenu()
     -- Mở popup nhập key với hiệu ứng
     local function openKeyPopup()
         keyGui.Enabled = true
-        frame.BackgroundTransparency = 1
-        textBox.Text = ""
-        textBox.PlaceholderText = "Nhập key ở đây..."
-        textBox:CaptureFocus()
-        fadeIn(frame, 0.3)
+        local keyFrame = keyGui:WaitForChild("KeyFrame")
+        local keyTextBox = keyFrame:WaitForChild("KeyTextBox")
+        keyFrame.BackgroundTransparency = 1
+        keyTextBox.Text = ""
+        keyTextBox.PlaceholderText = "Nhập key ở đây..."
+        keyTextBox:CaptureFocus()
+        fadeIn(keyFrame, 0.3)
     end
 
     -- Đóng popup nhập key với hiệu ứng
     local function closeKeyPopup()
-        fadeOut(frame, 0.3)
+        local keyFrame = keyGui:WaitForChild("KeyFrame")
+        fadeOut(keyFrame, 0.3)
         keyGui.Enabled = false
     end
 
@@ -390,7 +399,7 @@ local function createMenu()
         end
     end
 
-    openButton.MouseButton1Click:Connect(function()
+  openButton.MouseButton1Click:Connect(function()
         if not keyValidated then
             openKeyPopup()
         else
@@ -398,7 +407,7 @@ local function createMenu()
         end
     end)
 
-    submitBtn.MouseButton1Click:Connect(function()
+ submitBtn.MouseButton1Click:Connect(function()
         local inputKey = textBox.Text
         if inputKey == correctKey then
             keyValidated = true
