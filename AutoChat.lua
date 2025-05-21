@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -134,7 +135,7 @@ local function createMenu()
     menuFrame.Size = UDim2.new(0, 250, 0, 160)
     menuFrame.Position = UDim2.new(0, 10, 0, 70)
     menuFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    menuFrame.BackgroundTransparency = 0.5
+    menuFrame.BackgroundTransparency = 1 -- ẩn ban đầu
     menuFrame.Parent = menuGui
     menuFrame.Visible = false
     menuFrame.ClipsDescendants = true
@@ -284,79 +285,129 @@ local function createMenu()
         end
     end)
 
-    -- Yêu cầu nhập key khi mở menu lần đầu
+    -- Tạo popup nhập key (ẩn ban đầu)
+    local keyGui = Instance.new("ScreenGui")
+    keyGui.Name = "KeyGui"
+    keyGui.Parent = playerGui
+    keyGui.Enabled = false
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 150)
+    frame.Position = UDim2.new(0.5, -150, 0.5, -75)
+    frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    frame.BackgroundTransparency = 1 -- ẩn ban đầu
+    frame.ClipsDescendants = true
+    frame.BorderSizePixel = 0
+    frame.Parent = keyGui
+
+    local uicorner = Instance.new("UICorner")
+    uicorner.CornerRadius = UDim.new(0, 15)
+    uicorner.Parent = frame
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Position = UDim2.new(0, 0, 0, 10)
+    title.BackgroundTransparency = 1
+    title.Text = "Nhập Key để mở Menu"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.Font = Enum.Font.SourceSansBold
+    title.TextScaled = true
+    title.Parent = frame
+
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(1, -40, 0, 40)
+    textBox.Position = UDim2.new(0, 20, 0, 60)
+    textBox.ClearTextOnFocus = false
+    textBox.PlaceholderText = "Nhập key ở đây..."
+    textBox.Text = ""
+    textBox.TextColor3 = Color3.new(1,1,1)
+    textBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    textBox.Parent = frame
+    textBox.Font = Enum.Font.SourceSans
+    textBox.TextScaled = true
+    textBox.ClipsDescendants = true
+    local uicornerText = Instance.new("UICorner")
+    uicornerText.CornerRadius = UDim.new(0, 10)
+    uicornerText.Parent = textBox
+
+    local submitBtn = Instance.new("TextButton")
+    submitBtn.Size = UDim2.new(0, 100, 0, 30)
+    submitBtn.Position = UDim2.new(0.5, -50, 1, -40)
+    submitBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
+    submitBtn.TextColor3 = Color3.new(1,1,1)
+    submitBtn.Font = Enum.Font.SourceSansBold
+    submitBtn.TextScaled = true
+    submitBtn.Text = "Xác nhận"
+    submitBtn.Parent = frame
+    local uicornerBtn = Instance.new("UICorner")
+    uicornerBtn.CornerRadius = UDim.new(0, 10)
+    uicornerBtn.Parent = submitBtn
+
+    -- Hàm fade in
+    local function fadeIn(guiObject, duration)
+        guiObject.Visible = true
+        local tween = TweenService:Create(guiObject, TweenInfo.new(duration), {BackgroundTransparency = 0.3})
+        tween:Play()
+        tween.Completed:Wait()
+    end
+
+    -- Hàm fade out
+    local function fadeOut(guiObject, duration)
+        local tween = TweenService:Create(guiObject, TweenInfo.new(duration), {BackgroundTransparency = 1})
+        tween:Play()
+        tween.Completed:Wait()
+        guiObject.Visible = false
+    end
+
+    -- Mở popup nhập key với hiệu ứng
+    local function openKeyPopup()
+        keyGui.Enabled = true
+        frame.BackgroundTransparency = 1
+        textBox.Text = ""
+        textBox.PlaceholderText = "Nhập key ở đây..."
+        textBox:CaptureFocus()
+        fadeIn(frame, 0.3)
+    end
+
+    -- Đóng popup nhập key với hiệu ứng
+    local function closeKeyPopup()
+        fadeOut(frame, 0.3)
+        keyGui.Enabled = false
+    end
+
+    -- Mở/đóng menu với hiệu ứng
+    local function toggleMenu()
+        if menuFrame.Visible then
+            local tween = TweenService:Create(menuFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+            tween:Play()
+            tween.Completed:Wait()
+            menuFrame.Visible = false
+        else
+            menuFrame.Visible = true
+            menuFrame.BackgroundTransparency = 1
+            local tween = TweenService:Create(menuFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0.5})
+            tween:Play()
+        end
+    end
+
     openButton.MouseButton1Click:Connect(function()
         if not keyValidated then
-            -- Tạo popup nhập key
-            local keyGui = Instance.new("ScreenGui")
-            keyGui.Name = "KeyGui"
-            keyGui.Parent = playerGui
-
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0, 300, 0, 150)
-            frame.Position = UDim2.new(0.5, -150, 0.5, -75)
-            frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-            frame.BackgroundTransparency = 0.3
-            frame.ClipsDescendants = true
-            frame.BorderSizePixel = 0
-            frame.Parent = keyGui
-
-            local uicorner = Instance.new("UICorner")
-            uicorner.CornerRadius = UDim.new(0, 15)
-            uicorner.Parent = frame
-
-            local title = Instance.new("TextLabel")
-            title.Size = UDim2.new(1, 0, 0, 30)
-            title.Position = UDim2.new(0, 0, 0, 10)
-            title.BackgroundTransparency = 1
-            title.Text = "Nhập Key để mở Menu"
-            title.TextColor3 = Color3.new(1, 1, 1)
-            title.Font = Enum.Font.SourceSansBold
-            title.TextScaled = true
-            title.Parent = frame
-
-            local textBox = Instance.new("TextBox")
-            textBox.Size = UDim2.new(1, -40, 0, 40)
-            textBox.Position = UDim2.new(0, 20, 0, 60)
-            textBox.ClearTextOnFocus = false
-            textBox.PlaceholderText = "Nhập key ở đây..."
-            textBox.Text = ""
-            textBox.TextColor3 = Color3.new(1,1,1)
-            textBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-            textBox.Parent = frame
-            textBox.Font = Enum.Font.SourceSans
-            textBox.TextScaled = true
-            textBox.ClipsDescendants = true
-            local uicornerText = Instance.new("UICorner")
-            uicornerText.CornerRadius = UDim.new(0, 10)
-            uicornerText.Parent = textBox
-
-            local submitBtn = Instance.new("TextButton")
-            submitBtn.Size = UDim2.new(0, 100, 0, 30)
-            submitBtn.Position = UDim2.new(0.5, -50, 1, -40)
-            submitBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
-            submitBtn.TextColor3 = Color3.new(1,1,1)
-            submitBtn.Font = Enum.Font.SourceSansBold
-            submitBtn.TextScaled = true
-            submitBtn.Text = "Xác nhận"
-            submitBtn.Parent = frame
-            local uicornerBtn = Instance.new("UICorner")
-            uicornerBtn.CornerRadius = UDim.new(0, 10)
-            uicornerBtn.Parent = submitBtn
-
-            submitBtn.MouseButton1Click:Connect(function()
-                local inputKey = textBox.Text
-                if inputKey == correctKey then
-                    keyValidated = true
-                    menuFrame.Visible = true
-                    keyGui:Destroy()
-                else
-                    textBox.Text = ""
-                    textBox.PlaceholderText = "Sai key, thử lại!"
-                end
-            end)
+            openKeyPopup()
         else
-            menuFrame.Visible = not menuFrame.Visible
+            toggleMenu()
+        end
+    end)
+
+    submitBtn.MouseButton1Click:Connect(function()
+        local inputKey = textBox.Text
+        if inputKey == correctKey then
+            keyValidated = true
+            closeKeyPopup()
+            toggleMenu()
+        else
+            textBox.Text = ""
+            textBox.PlaceholderText = "Sai key, thử lại!"
+            textBox:CaptureFocus()
         end
     end)
 end
