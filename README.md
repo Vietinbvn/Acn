@@ -43,3 +43,4 @@ ToggleButton.MouseButton1Click:Connect(function()
         coroutine.wrap(autoChat)()
     end
 end)
+
