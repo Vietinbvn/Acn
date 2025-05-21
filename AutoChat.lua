@@ -35,7 +35,7 @@ local function createUI()
     label.Parent = frame
 
     -- Hiện 5 giây rồi ẩn
-    wait(1)
+    wait(5)
     blackScreen:Destroy()
 
     -- 2. Anti-ban (giả lập)
