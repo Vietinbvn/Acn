@@ -1,15 +1,9 @@
--- Services
-local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
-local RunService = game:GetService("RunService")
-local StarterGui = game:GetService("StarterGui")
-local HttpService = game:GetService("HttpService")
-
+-- Các phần đã có từ trước
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Version game (bạn thay đổi theo game của bạn)
 local gameVersion = "1.0.0"
+local currentServerId = game.JobId  -- Lấy ID của server hiện tại
 
 -- Hàm tạo UI
 local function createUI()
@@ -39,8 +33,6 @@ local function createUI()
     blackScreen:Destroy()
 
     -- 2. Anti-ban (giả lập)
-    -- Ví dụ: disable một số event hoặc cảnh báo (tùy game)
-    -- Ở đây đơn giản chỉ in ra console
     print("Anti-ban system activated!")
 
     -- 3. Tạo nút nhỏ góc để mở menu
@@ -84,7 +76,7 @@ local function createUI()
     uicorner.CornerRadius = UDim.new(0, 15)
     uicorner.Parent = menuFrame
 
-    -- Tạo 4 dòng chức năng
+    -- Tạo các dòng chức năng
     local function createMenuLine(text, posY)
         local label = Instance.new("TextLabel")
         label.Size = UDim2.new(1, -20, 0, 30)
@@ -134,21 +126,53 @@ local function createUI()
     uicornerBtn2.CornerRadius = UDim.new(0, 10)
     uicornerBtn2.Parent = hopButton
 
-    -- Dòng 4: Old server (ít nhất 1 ngày)
-    local oldServerButton = Instance.new("TextButton")
-    oldServerButton.Size = UDim2.new(1, -20, 0, 30)
-    oldServerButton.Position = UDim2.new(0, 10, 0, 130)
-    oldServerButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-    oldServerButton.BackgroundTransparency = 0.3
-    oldServerButton.TextColor3 = Color3.new(1, 1, 1)
-    oldServerButton.Font = Enum.Font.SourceSansBold
-    oldServerButton.TextScaled = true
-    oldServerButton.Text = "Old Server (>=1 day)"
-    oldServerButton.Parent = menuFrame
-    oldServerButton.AutoButtonColor = true
+    -- Dòng 4: Nút copy Server ID
+    local copyIdButton = Instance.new("TextButton")
+    copyIdButton.Size = UDim2.new(1, -20, 0, 30)
+    copyIdButton.Position = UDim2.new(0, 10, 0, 130)
+    copyIdButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    copyIdButton.BackgroundTransparency = 0.3
+    copyIdButton.TextColor3 = Color3.new(1, 1, 1)
+    copyIdButton.Font = Enum.Font.SourceSansBold
+    copyIdButton.TextScaled = true
+    copyIdButton.Text = "Copy Server ID"
+    copyIdButton.Parent = menuFrame
+    copyIdButton.AutoButtonColor = true
     local uicornerBtn3 = Instance.new("UICorner")
     uicornerBtn3.CornerRadius = UDim.new(0, 10)
-    uicornerBtn3.Parent = oldServerButton
+    uicornerBtn3.Parent = copyIdButton
+
+    -- Dòng 5: Dán Server ID để join
+    local joinIdInput = Instance.new("TextBox")
+    joinIdInput.Size = UDim2.new(1, -20, 0, 30)
+    joinIdInput.Position = UDim2.new(0, 10, 0, 170)
+    joinIdInput.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    joinIdInput.BackgroundTransparency = 0.3
+    joinIdInput.TextColor3 = Color3.new(1, 1, 1)
+    joinIdInput.Font = Enum.Font.SourceSans
+    joinIdInput.TextScaled = true
+    joinIdInput.PlaceholderText = "Dán Server ID để Join"
+    joinIdInput.Parent = menuFrame
+    joinIdInput.ClearTextOnFocus = true
+    local uicornerBtn4 = Instance.new("UICorner")
+    uicornerBtn4.CornerRadius = UDim.new(0, 10)
+    uicornerBtn4.Parent = joinIdInput
+
+    -- Nút Join Server bằng ID
+    local joinByIdButton = Instance.new("TextButton")
+    joinByIdButton.Size = UDim2.new(1, -20, 0, 30)
+    joinByIdButton.Position = UDim2.new(0, 10, 0, 210)
+    joinByIdButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    joinByIdButton.BackgroundTransparency = 0.3
+    joinByIdButton.TextColor3 = Color3.new(1, 1, 1)
+    joinByIdButton.Font = Enum.Font.SourceSansBold
+    joinByIdButton.TextScaled = true
+    joinByIdButton.Text = "Join by ID"
+    joinByIdButton.Parent = menuFrame
+    joinByIdButton.AutoButtonColor = true
+    local uicornerBtn5 = Instance.new("UICorner")
+    uicornerBtn5.CornerRadius = UDim.new(0, 10)
+    uicornerBtn5.Parent = joinByIdButton
 
     -- Hiệu ứng mở menu
     openButton.MouseButton1Click:Connect(function()
@@ -157,21 +181,18 @@ local function createUI()
 
     -- Xử lý Rejoin Server
     rejoinButton.MouseButton1Click:Connect(function()
-        -- Teleport lại chính mình vào server hiện tại
         TeleportService:Teleport(game.PlaceId, player)
     end)
 
-    -- Xử lý Hop Server (chọn server khác ngẫu nhiên)
+    -- Xử lý Hop Server
     hopButton.MouseButton1Click:Connect(function()
-        -- Lấy list server public (giới hạn 100)
         local servers
         local success, err = pcall(function()
             local url = string.format("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100", game.PlaceId)
-            local response = game:GetService("HttpService"):GetAsync(url)
+            local response = HttpService:GetAsync(url)
             servers = HttpService:JSONDecode(response).data
         end)
         if success and servers then
-            -- Lọc server khác với server hiện tại
             local currentJobId = game.JobId
             local availableServers = {}
             for _, server in pairs(servers) do
@@ -190,41 +211,19 @@ local function createUI()
         end
     end)
 
-    -- Xử lý Old Server (ít nhất 1 ngày)
-    oldServerButton.MouseButton1Click:Connect(function()
-        -- Lấy list server public
-        local servers
-        local success, err = pcall(function()
-            local url = string.format("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100", game.PlaceId)
-            local response = HttpService:GetAsync(url)
-            servers = HttpService:JSONDecode(response).data
-        end)
-        if success and servers then
-            -- Lọc server có createdAt cách đây >= 1 ngày
-            local now = os.time()
-            local oneDaySeconds = 24 * 60 * 60
-            local oldServers = {}
-            for _, server in pairs(servers) do
-                if server.playing > 0 and server.id ~= game.JobId then
-                    -- createdAt là ISO8601 string, chuyển sang timestamp
-                    local pattern = "(%d+)%-(%d+)%-(%d+)T(%d+):(%d+):(%d+)%.%d+Z"
-                    local year, month, day, hour, min, sec = server.createdAt:match(pattern)
-                    if year then
-                        local timestamp = os.time({year = tonumber(year), month = tonumber(month), day = tonumber(day), hour = tonumber(hour), min = tonumber(min), sec = tonumber(sec)})
-                        if now - timestamp >= oneDaySeconds then
-                            table.insert(oldServers, server)
-                        end
-                    end
-                end
-            end
-            if #oldServers > 0 then
-                local chosenServer = oldServers[math.random(1, #oldServers)]
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, chosenServer.id, player)
-            else
-                warn("Không tìm thấy server cũ >= 1 ngày!")
-            end
+    -- Xử lý Copy Server ID
+    copyIdButton.MouseButton1Click:Connect(function()
+        setclipboard(currentServerId)
+        print("Server ID copied: " .. currentServerId)
+    end)
+
+    -- Xử lý Join Server bằng ID
+    joinByIdButton.MouseButton1Click:Connect(function()
+        local serverId = joinIdInput.Text
+        if serverId and serverId ~= "" then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, serverId, player)
         else
-            warn("Lỗi lấy server list: ", err)
+            warn("Please enter a valid server ID.")
         end
     end)
 end
